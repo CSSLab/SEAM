@@ -1,0 +1,11 @@
+{
+  "openai": {
+    "api_key": "your_openai_api_key_here"
+  },
+  "anthropic": {
+    "api_key": "your_anthropic_api_key_here"
+  },
+  "huggingface": {
+    "api_key": "your_huggingface_token_here"
+  }
+}

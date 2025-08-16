@@ -1,3 +1,8 @@
+# macOS
+.DS_Store
+
+CLAUDE.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -205,3 +210,76 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# API Keys and Secrets
+api_keys.json
+code/config/api_keys.json
+
+# Legacy code (deprecated)
+code/run/legacy/
+
+# Logs
+logs/
+
+# AI/ML Model Results and Outputs
+results/
+outputs/
+inference_results/
+*.jsonl
+
+# Large Benchmark Data Files
+data/benchmark/
+data/generated/
+data/processed/
+data/raw/
+data/*/
+
+# All Log Files (not just in logs/ directory)
+*.log
+
+# AI/ML Model Artifacts
+models/
+checkpoints/
+saved_models/
+model_cache/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.pickle
+*.safetensors
+
+# HuggingFace Cache
+.cache/
+transformers_cache/
+
+# GPU Memory and Training Artifacts
+wandb/
+tensorboard_logs/
+tb_logs/
+
+# Large Media Files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.svg
+!**/assets/**
+!**/static/**
+!**/docs/**
+
+# Additional IDE Files
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# OS-specific
+Thumbs.db
+.Trashes
+ehthumbs.db
