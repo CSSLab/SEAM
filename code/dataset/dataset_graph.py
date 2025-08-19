@@ -23,7 +23,7 @@ def task_bfs_traversal(cfg):
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--benchmark_root", default="../data/benchmark", type=str)
+    parser.add_argument("--benchmark_root", default="../data", type=str)
     parser.add_argument("--samples", default=200, type=int)
     parser.add_argument("--offset", default=1, type=int)
 

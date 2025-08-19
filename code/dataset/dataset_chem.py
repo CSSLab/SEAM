@@ -327,7 +327,7 @@ def parse_args():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_root", default="/data/models/benchmark_models", type=str)
-    parser.add_argument("--benchmark_root", default="../data/benchmark", type=str)
+    parser.add_argument("--benchmark_root", default="../data", type=str)
     parser.add_argument("--data_path", default="../data/chem/llm_test.csv", type=str)
     parser.add_argument("--emb_model", default="multilingual-e5-large-instruct", type=str)
     parser.add_argument("--caption_path", default="../data/chem/molecule_captioning_test.csv", type=str)

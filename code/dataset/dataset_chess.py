@@ -504,7 +504,7 @@ def task_eval(cfg):
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--benchmark_root", default="../data/benchmark", type=str)
+    parser.add_argument("--benchmark_root", default="../data", type=str)
     parser.add_argument("--puzzle_path", default="../data/chess/lichess_db_puzzle.csv", type=str)
     parser.add_argument("--eval_path", default="../data/chess/lichess_db_eval_samples.jsonl", type=str)
     parser.add_argument("--samples", default=200, type=int)

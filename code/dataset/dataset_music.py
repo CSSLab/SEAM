@@ -644,7 +644,7 @@ def task_rhythm_pattern(cfg):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--benchmark_root", default="../data/benchmark", type=str)
+    parser.add_argument("--benchmark_root", default="../data", type=str)
     parser.add_argument("--samples", default=200, type=int)
     parser.add_argument("--min_measures", default=24, type=int, 
                       help="Minimum number of measures for filtering")

@@ -1,6 +1,8 @@
-# SEAM: Semantically Equivalent Across Modalities Benchmark
+# SEAM: Semantically Equivalent Across Modalities Benchmark for Vision-Language Models
 
-High-performance evaluation pipeline for the SEAM benchmark for Vision-Language Models.
+## Abstract
+
+Evaluating whether vision–language models (VLMs) reason consistently across representations is challenging because modality comparisons are typically confounded by task differences and asymmetric information. We introduce **SEAM**, a benchmark that pairs semantically equivalent inputs across four domains with existing standardized textual and visual notations. By employing distinct notation systems across modalities, in contrast to OCR-based image-text pairing, SEAM provides a rigorous comparative assessment of the textual-symbolic and visual-spatial reasoning capabilities of VLMs. Across 16 contemporary models, we observe systematic modality imbalance: vision frequently lags language in overall performance, despite the problems containing semantically equivalent information, and cross-modal agreement is relatively low. Our error analysis reveals two main drivers: textual perception failures from tokenization in domain notations and visual perception failures that induce hallucinations. We also show that our results are largely robust to visual transformations. SEAM establishes a controlled, semantically equivalent setting for measuring and improving modality-agnostic reasoning.
 
 ## Overview
 
@@ -195,7 +197,29 @@ cd code/run && python 02_extract.py --list
 cd code/run && python 03_metric.py --list
 ```
 
-## Dataset Generation
+## Dataset Preparation
+
+### Option 1: Download from HuggingFace (Recommended)
+
+The SEAM benchmark dataset is available on HuggingFace and can be downloaded automatically:
+
+```bash
+# The dataset will be automatically downloaded when running the evaluation pipeline
+# No manual setup required - just run inference scripts directly
+
+# For manual download using HuggingFace datasets:
+python -c "
+from datasets import load_dataset
+dataset = load_dataset('seam-benchmark/SEAM')
+print('Dataset downloaded successfully')
+"
+```
+
+### Option 2: Download from Google Drive
+
+You can download the pre-generated dataset from [this link](https://drive.google.com/drive/folders/12vruRWA56Sl4joIDH7uXF8QRmUcUoKwn?usp=sharing) and extract it to the `data/` directory.
+
+### Option 3: Generate Dataset Manually
 
 To generate the SEAM benchmark dataset manually, run the following scripts from the `code/dataset/` directory:
 
@@ -215,7 +239,7 @@ python dataset_graph.py
 python dataset_music.py
 ```
 
-Each script will generate task-specific data, images, and question files in the `data/benchmark/` directory. You can also directly download the pre-generated dataset from [this link](https://drive.google.com/drive/folders/12vruRWA56Sl4joIDH7uXF8QRmUcUoKwn?usp=sharing) and unzip it under that directory.
+Each script will generate task-specific data, images, and question files in the `data/` directory.
 
 ### Generate Plots
 
@@ -256,8 +280,7 @@ seam-benchmark/
 │   └── utils/               # Utility functions
 │       ├── task_loader.py   # Task loading and formatting
 │       └── utils.py         # Image processing utilities
-├── data/                    # All benchmark data
-│   └── benchmark/           # Generated benchmark datasets (JSONL + images)
+├── data/                    # Generated benchmark datasets (JSONL + images)
 ├── results/                 # Model evaluation results (unified structure)
 │   ├── {model-name}/        # e.g., qwen-qwen2.5-vl-7b-instruct/
 │   │   ├── output.jsonl     # Raw inference outputs
@@ -464,4 +487,15 @@ cd code/run && python extract_answers.py --results-file ../../results/debug/resu
 
 ## Citation
 
-If you use this evaluation pipeline, please cite the original SEAM benchmark paper.
+If you use this evaluation pipeline, please cite the original SEAM benchmark paper:
+
+```bibtex
+@inproceedings{
+tang2025seam,
+title={{SEAM}: Semantically Equivalent Across Modalities Benchmark for Vision-Language Models},
+author={Zhenwei Tang and Difan Jiao and Blair Yang and Ashton Anderson},
+booktitle={Second Conference on Language Modeling},
+year={2025},
+url={https://openreview.net/forum?id=lI4LgGv4sX}
+}
+```

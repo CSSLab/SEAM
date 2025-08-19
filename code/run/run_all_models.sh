@@ -1,50 +1,37 @@
 #!/bin/bash
 
-# SEAM Benchmark - Complete Pipeline for All Models
-# This script runs the full 3-stage pipeline: Inference (01) -> Extraction (02) -> Metrics (03)
-#
-# Usage:
-#   ./run_all_models.sh
-#
-# To enable/disable models:
-#   - Comment out models you don't want to run (add # at the beginning)
-#   - Uncomment models you want to run (remove # from the beginning)
-#   - The script automatically detects model type and uses appropriate inference script
-
 set -e  # Exit on any error
 
-# Change to the script directory
 cd "$(dirname "$0")"
 
-# Models to run - organized by provider
 VLLM_MODELS=(
-    # "Qwen/Qwen2.5-VL-72B-Instruct"
-    # "Qwen/Qwen2.5-VL-7B-Instruct"
-    # "Qwen/Qwen2.5-Omni-7B"
-    # "OpenGVLab/InternVL3-78B"
-    # "OpenGVLab/InternVL3-8B"
-    # "OpenGVLab/InternVL2_5-78B"
-    # "OpenGVLab/InternVL2_5-8B"
-    # "meta-llama/Llama-3.2-90B-Vision-Instruct"
+    "Qwen/Qwen2.5-VL-72B-Instruct"
+    "Qwen/Qwen2.5-VL-7B-Instruct"
+    "Qwen/Qwen2.5-Omni-7B"
+    "OpenGVLab/InternVL3-78B"
+    "OpenGVLab/InternVL3-8B"
+    "OpenGVLab/InternVL2_5-78B"
+    "OpenGVLab/InternVL2_5-8B"
+    "meta-llama/Llama-3.2-90B-Vision-Instruct"
     "meta-llama/Llama-3.2-11B-Vision-Instruct"
-    # "google/gemma-3-27b-it"
-    # "google/gemma-3-12b-it"
+    "google/gemma-3-27b-it"
+    "google/gemma-3-12b-it"
 )
 
 OPENAI_MODELS=(
-    # "gpt-5"
-    # "gpt-5-mini"
-    # "gpt-5-nano"
-    # "gpt-4o"
-    # "gpt-4o-mini"
+    "gpt-5"
+    "gpt-5-mini"
+    "gpt-5-nano"
+    "gpt-4o"
+    "gpt-4o-mini"
 )
 
 CLAUDE_MODELS=(
-    # "claude-opus-4-1-20250805"
-    # "claude-opus-4-20250514"
-    # "claude-sonnet-4-20250514"
-    # "claude-3-7-sonnet-20250219"
-    # "claude-3-5-haiku-20241022"
+    "claude-opus-4-1-20250805"
+    "claude-opus-4-20250514"
+    "claude-sonnet-4-20250514"
+    "claude-3-7-sonnet-20250219"
+    "claude-3-5-haiku-20241022"
 )
 
 # Modes to run (language-only, vision-only, vision-language)

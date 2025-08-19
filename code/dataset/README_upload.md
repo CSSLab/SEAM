@@ -163,7 +163,7 @@ Your token needs:
 
 The script expects this structure:
 ```
-data/benchmark/
+data/
 ├── carbon.jsonl
 ├── carbon/
 │   ├── 0.png
