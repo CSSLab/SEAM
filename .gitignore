@@ -1,8 +1,6 @@
 # macOS
 .DS_Store
 
-CLAUDE.md
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -228,11 +226,11 @@ inference_results/
 *.jsonl
 
 # Large Benchmark Data Files
-data/benchmark/
-data/generated/
-data/processed/
-data/raw/
-data/*/
+data/
+raw_data/
+# Keep test files for consistency testing but exclude them from git
+*_consistency_test.log
+full_consistency_test.log
 
 # All Log Files (not just in logs/ directory)
 *.log

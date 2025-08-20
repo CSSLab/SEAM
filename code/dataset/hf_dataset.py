@@ -147,6 +147,107 @@ def get_question_text(task, data_item):
     
     return ""
 
+def create_base_sample(task, index, data_item, benchmark_root):
+    """Create a base dataset sample with only essential data (no modality-specific fields)."""
+    # Domain mapping
+    task_domains = {
+        # Chess domain
+        "fork": "chess", "legal": "chess", "puzzle": "chess", "eval": "chess",
+        # Chemistry domain  
+        "carbon": "chemistry", "hydrogen": "chemistry", "weight": "chemistry", 
+        "caption": "chemistry",
+        # Music domain
+        "notes": "music", "measures": "music", "forms": "music", "rhythm": "music",
+        # Graph theory domain
+        "path_counting": "graph", "path_existence": "graph", 
+        "shortest_path": "graph", "bfs_traversal": "graph"
+    }
+    
+    domain = task_domains.get(task, "unknown")
+    
+    # Handle different correct answer field names across tasks
+    correct_idx = -1
+    correct_answer = ""
+    
+    # Get the correct options field based on task
+    if task == "legal":
+        options = data_item.get("options_uci", [])
+    elif task == "puzzle":
+        options = data_item.get("options_san", [])
+    else:
+        # fork, eval, chemistry, music, graph tasks use "options"
+        options = data_item.get("options", [])
+    
+    if "correct_idx" in data_item:
+        # Standard format (chemistry, music, graph, eval tasks)
+        correct_idx = data_item["correct_idx"]
+        if 0 <= correct_idx < len(options):
+            correct_answer = str(options[correct_idx])
+    elif "legal_move_idx" in data_item:
+        # Legal chess task (uses options_uci)
+        correct_idx = data_item["legal_move_idx"]
+        if 0 <= correct_idx < len(options):
+            correct_answer = str(options[correct_idx])
+    elif "best_move_idx" in data_item:
+        # Puzzle chess task (uses options_san)
+        correct_idx = data_item["best_move_idx"]
+        if 0 <= correct_idx < len(options):
+            correct_answer = str(options[correct_idx])
+    elif "correct_square" in data_item:
+        # Fork chess task (uses options)
+        correct_answer = data_item["correct_square"]
+        if correct_answer in options:
+            correct_idx = options.index(correct_answer)
+    
+    # Ensure we have exactly 4 options, pad with empty strings if needed
+    padded_options = [str(opt) for opt in options] + [""] * (4 - len(options))
+    
+    sample = {
+        "task": task,
+        "domain": domain,
+        "index": index,
+        "question_type": "multiple_choice",
+        "option_a": padded_options[0],
+        "option_b": padded_options[1], 
+        "option_c": padded_options[2],
+        "option_d": padded_options[3],
+        "correct_answer": correct_answer,
+        "correct_idx": correct_idx
+    }
+    
+    # Add task-specific notation
+    if "smiles" in data_item:
+        sample["notation"] = data_item["smiles"]
+        sample["notation_type"] = "SMILES"
+    elif "fen" in data_item:
+        sample["notation"] = data_item["fen"]
+        sample["notation_type"] = "FEN"
+    elif "abc_notation" in data_item:
+        sample["notation"] = data_item["abc_notation"]
+        sample["notation_type"] = "ABC"
+    elif "matrix" in data_item:
+        sample["notation"] = str(data_item["matrix"])
+        sample["notation_type"] = "adjacency_matrix"
+    else:
+        sample["notation"] = ""
+        sample["notation_type"] = ""
+    
+    # Add question text using SEAM's format
+    sample["question"] = get_question_text(task, data_item)
+    
+    # Load and store the image for this sample
+    image_path = get_image_path(task, index, data_item, benchmark_root)
+    if image_path and image_path.exists():
+        try:
+            sample["image"] = PILImage.open(image_path)
+        except Exception as e:
+            print(f"Warning: Could not load image {image_path}: {e}")
+            sample["image"] = None
+    else:
+        sample["image"] = None
+        
+    return sample
+
 def create_sample(task, modality, index, data_item, benchmark_root):
     """Create a single dataset sample."""
     # Domain mapping
@@ -258,11 +359,10 @@ def create_sample(task, modality, index, data_item, benchmark_root):
     return sample
 
 def create_dataset_features():
-    """Define the dataset schema."""
+    """Define the dataset schema for base samples (no modality field)."""
     return Features({
         "task": Value("string"),
         "domain": Value("string"), 
-        "modality": Value("string"),
         "index": Value("int32"),
         "question_type": Value("string"),
         "question": Value("string"),
@@ -304,8 +404,6 @@ dataset_info:
     dtype: string
   - name: domain
     dtype: string
-  - name: modality
-    dtype: string
   - name: index
     dtype: int32
   - name: question_type
@@ -333,52 +431,52 @@ dataset_info:
   splits:
   - name: fork
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: legal
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: puzzle
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: eval
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: carbon
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: hydrogen
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: weight
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: caption
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: notes
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: measures
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: forms
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: rhythm
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: path_counting
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: path_existence
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: shortest_path
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   - name: bfs_traversal
     num_bytes: 0
-    num_examples: 600
+    num_examples: 200
   download_size: 0
   dataset_size: 0
 configs:
@@ -438,8 +536,8 @@ Evaluating whether vision–language models (VLMs) reason consistently across re
 - **4 Domains**: Chess, Chemistry, Music, Graph Theory with standardized notations
 - **16 Tasks**: 4 tasks per domain (64 total task-modality combinations)
 - **3 Modalities**: Language-only (L), Vision-only (V), Vision-Language (VL)
-- **3,200 Questions**: 200 questions × 16 tasks
-- **9,600 Evaluations**: Each question evaluated in all 3 modalities
+- **3,200 Base Samples**: 200 samples × 16 tasks
+- **9,600 Evaluations**: TaskLoader generates 3 modality-specific prompts per base sample
 - **Semantic Equivalence**: Same information presented in different representational formats
 
 ## Domains and Notation Systems
@@ -473,7 +571,7 @@ The dataset is organized into 16 task-based splits (600 samples each):
 - **Music**: `notes`, `measures`, `forms`, `rhythm`
 - **Graph Theory**: `path_counting`, `path_existence`, `shortest_path`, `bfs_traversal`
 
-Each split contains 600 samples: 200 base questions × 3 modalities (L, V, VL).
+Each split contains 200 base samples. TaskLoader generates modality-specific prompts (L, V, VL) from these base samples.
 
 ## Usage
 
@@ -487,16 +585,15 @@ dataset = load_dataset("lilvjosephtang/SEAM-Benchmark")
 chess_fork = dataset["fork"]  # Chess fork detection (600 samples)
 chemistry_carbon = dataset["carbon"]  # Carbon atom counting (600 samples)
 
-# Filter by modality within a task
-language_only = chess_fork.filter(lambda x: x["modality"] == "Language")
-vision_only = chess_fork.filter(lambda x: x["modality"] == "Vision") 
-vision_language = chess_fork.filter(lambda x: x["modality"] == "Vision-Language")
+# Each task contains 200 base samples
+# TaskLoader generates modality-specific prompts (L/V/VL) from these base samples
+print(f"Task {chess_fork[0]['task']} has {len(chess_fork)} base samples")
 
 # Example sample structure
 sample = chess_fork[0]
 print(f"Task: {sample['task']}")
 print(f"Domain: {sample['domain']}")
-print(f"Modality: {sample['modality']}")
+# No modality field - TaskLoader handles modality generation
 print(f"Question: {sample['question']}")
 print(f"Options: A) {sample['option_a']}, B) {sample['option_b']}, C) {sample['option_c']}, D) {sample['option_d']}")
 print(f"Correct Answer: {sample['correct_answer']}")
@@ -509,7 +606,7 @@ print(f"Notation: {sample['notation']}")  # FEN string for chess
 Each sample contains:
 - `task`: Task identifier (e.g., "fork", "carbon")
 - `domain`: Domain category ("chess", "chemistry", "music", "graph")
-- `modality`: Evaluation modality ("Language", "Vision", "Vision-Language")
+- No modality field (TaskLoader generates modality-specific prompts)
 - `index`: Sample index within the task
 - `question`: Question text (if applicable)
 - `notation`: Domain-specific notation (FEN, SMILES, ABC, adjacency matrix)
@@ -517,7 +614,7 @@ Each sample contains:
 - `option_a`, `option_b`, `option_c`, `option_d`: Multiple choice options
 - `correct_answer`: The correct answer
 - `correct_idx`: Index of the correct option
-- `image`: Associated image (PIL Image for Vision/Vision-Language modalities, None for Language)
+- `image`: Associated image (PIL Image, None for base storage - TaskLoader handles image loading for V/VL modalities)
 
 ## Evaluation Protocol
 
@@ -641,11 +738,10 @@ def upload_to_hf(args):
         data = load_jsonl(task_file)
         task_samples = []
         
-        # Create samples for all 3 modalities in order: v, l, vl
-        for modality in ["v", "l", "vl"]:
-            for index, data_item in enumerate(data):
-                sample = create_sample(task, modality, index, data_item, benchmark_root)
-                task_samples.append(sample)
+        # Create base samples without modality variations (TaskLoader will handle modalities)
+        for index, data_item in enumerate(data):
+            sample = create_base_sample(task, index, data_item, benchmark_root)
+            task_samples.append(sample)
         
         # Create dataset for this task
         if task_samples:
@@ -758,9 +854,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="SEAM dataset management")
     parser.add_argument("--repo-id", default="lilvjosephtang/SEAM-Benchmark",
                        help="HuggingFace repository ID")
-    parser.add_argument("--folder-path", default="../../data",
+    parser.add_argument("--folder-path", default="../../raw_data",
                        help="Path to data folder")
-    parser.add_argument("--output-dir", default="downloads",
+    parser.add_argument("--output-dir", default="../../data",
                        help="Output directory for downloads")
     parser.add_argument("--stage", default="upload", choices=["upload", "download", "card-only"],
                        help="Stage to run: upload (full dataset), download, or card-only (README only)")
