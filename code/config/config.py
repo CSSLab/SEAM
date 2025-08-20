@@ -6,7 +6,7 @@ Configuration settings for SEAM benchmark vLLM batch inference.
 from pathlib import Path
 
 # Path configuration - absolute paths
-BENCHMARK_ROOT = Path("/datadrive/josephtang/SEAM/data")
+BENCHMARK_ROOT = Path("/datadrive/josephtang/SEAM/code/data")
 RESULTS_DIR = Path("/datadrive/josephtang/SEAM/results")
 
 # vLLM Batch inference configuration
