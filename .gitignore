@@ -281,3 +281,8 @@ tb_logs/
 Thumbs.db
 .Trashes
 ehthumbs.db
+
+# Project-specific files to exclude
+CLAUDE.md
+code/plots/
+code/interp/

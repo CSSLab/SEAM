@@ -31,31 +31,83 @@ from tqdm import tqdm
 class UnifiedAnswerExtractor:
     """Unified answer extractor using vLLM for all model types"""
     
-    def __init__(self, extraction_model: str = None):
+    def __init__(self, extraction_model: str = None, gpu_memory_utilization: float = None, 
+                 tensor_parallel_size: int = None, max_model_len: int = None):
         self.extraction_model = extraction_model or EXTRACTION_MODEL
         print(f"🔧 Loading extraction model: {self.extraction_model}")
         
-        try:
-            # Initialize vLLM model for batch extraction
-            self.llm = LLM(
-                model=self.extraction_model,
-                tensor_parallel_size=TENSOR_PARALLEL_SIZE,  # Use 2 GPUs by default
-                gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
-                max_model_len=MAX_MODEL_LENGTH,
-                trust_remote_code=True
-            )
+        # Use command-line overrides or defaults
+        default_tps = tensor_parallel_size if tensor_parallel_size is not None else TENSOR_PARALLEL_SIZE
+        default_gpu_util = gpu_memory_utilization if gpu_memory_utilization is not None else GPU_MEMORY_UTILIZATION
+        default_max_len = max_model_len if max_model_len is not None else MAX_MODEL_LENGTH
+        
+        # Try different vLLM configurations if the initial one fails
+        fallback_configs = [
+            # Original config (current settings or CLI overrides)
+            {
+                'tensor_parallel_size': default_tps,
+                'gpu_memory_utilization': default_gpu_util,
+                'max_model_len': default_max_len
+            },
+            # Single GPU with reduced memory for extraction
+            {
+                'tensor_parallel_size': 1,
+                'gpu_memory_utilization': 0.4,
+                'max_model_len': 8192
+            },
+            # Very conservative settings
+            {
+                'tensor_parallel_size': 1,
+                'gpu_memory_utilization': 0.3,
+                'max_model_len': 4096
+            },
+            # Minimal settings for debugging
+            {
+                'tensor_parallel_size': 1,
+                'gpu_memory_utilization': 0.2,
+                'max_model_len': 2048
+            }
+        ]
+        
+        self.llm = None
+        for i, config in enumerate(fallback_configs):
+            config_desc = f"configuration {i+1} ({', '.join([f'{k}={v}' for k, v in config.items()])})"
+            print(f"  Attempting to load extraction model with {config_desc}")
             
-            # Set up sampling parameters for extraction
-            self.sampling_params = SamplingParams(
-                temperature=EXTRACTION_TEMPERATURE,
-                max_tokens=EXTRACTION_MAX_TOKENS,
-                stop=None
-            )
-            
-            print(f"✅ Extraction model loaded successfully!")
-        except Exception as e:
-            print(f"❌ Failed to load extraction model: {e}")
-            raise
+            try:
+                # Initialize vLLM model for batch extraction
+                self.llm = LLM(
+                    model=self.extraction_model,
+                    tensor_parallel_size=config['tensor_parallel_size'],
+                    gpu_memory_utilization=config['gpu_memory_utilization'],
+                    max_model_len=config['max_model_len'],
+                    trust_remote_code=True
+                )
+                
+                # Set up sampling parameters for extraction
+                self.sampling_params = SamplingParams(
+                    temperature=EXTRACTION_TEMPERATURE,
+                    max_tokens=EXTRACTION_MAX_TOKENS,
+                    stop=None
+                )
+                
+                print(f"✅ Extraction model loaded successfully with {config_desc}!")
+                break
+                
+            except Exception as e:
+                error_str = str(e).lower()
+                if "memory" in error_str or "cuda" in error_str or "vllm" in error_str or "workerproc" in error_str:
+                    print(f"  ⚠️  GPU/Memory error with {config_desc}: {str(e)[:200]}...")
+                    if i < len(fallback_configs) - 1:
+                        print(f"  Trying next configuration...")
+                    continue
+                else:
+                    # Non-memory error, don't try other configs
+                    print(f"❌ Failed to load extraction model: {e}")
+                    raise
+        
+        if self.llm is None:
+            raise RuntimeError("Failed to load extraction model with any configuration")
     
     def extract_answer_regex_only(self, output: str) -> tuple:
         """
@@ -203,7 +255,9 @@ def find_all_models() -> List[str]:
     
     return sorted(models)
 
-def process_model(model_name: str, extraction_model: str = None) -> Dict[str, int]:
+def process_model(model_name: str, extraction_model: str = None, 
+                  gpu_memory_utilization: float = None, tensor_parallel_size: int = None,
+                  max_model_len: int = None) -> Dict[str, int]:
     """Process extraction for a single model"""
     results_dir = RESULTS_DIR / model_name
     output_file = results_dir / "output.jsonl"
@@ -255,7 +309,8 @@ def process_model(model_name: str, extraction_model: str = None) -> Dict[str, in
     print(f"   Found {len(pending_results)} results needing extraction")
     
     # Initialize extractor
-    extractor = UnifiedAnswerExtractor(extraction_model)
+    extractor = UnifiedAnswerExtractor(extraction_model, gpu_memory_utilization, 
+                                     tensor_parallel_size, max_model_len)
     
     # Two-pass extraction process
     processed_count = 0
@@ -387,6 +442,9 @@ Examples:
   
   # Use custom extraction model
   python 02_extract.py --model gpt-4o-mini --extraction-model Qwen/Qwen2.5-1.5B-Instruct
+  
+  # Override GPU settings
+  python 02_extract.py --model gpt-4o-mini --gpu-memory-utilization 0.4 --tensor-parallel-size 1
         """
     )
     
@@ -400,6 +458,14 @@ Examples:
     parser.add_argument('--extraction-model', default=None,
                        help=f'Extraction model (default: {EXTRACTION_MODEL})')
     # Force parameter removed - always rerun extraction
+    
+    # GPU configuration overrides
+    parser.add_argument('--gpu-memory-utilization', type=float, default=None,
+                       help='Override GPU memory utilization (0.0-1.0)')
+    parser.add_argument('--tensor-parallel-size', type=int, default=None,
+                       help='Override tensor parallel size')
+    parser.add_argument('--max-model-len', type=int, default=None,
+                       help='Override max model length')
     
     args = parser.parse_args()
     
@@ -443,7 +509,8 @@ Examples:
             
             total_stats = {"processed": 0, "errors": 0}
             for model in models:
-                stats = process_model(model, args.extraction_model)
+                stats = process_model(model, args.extraction_model, args.gpu_memory_utilization,
+                                    args.tensor_parallel_size, args.max_model_len)
                 total_stats["processed"] += stats["processed"]
                 total_stats["errors"] += stats["errors"]
             
@@ -453,7 +520,8 @@ Examples:
             
         else:
             # Process specific model
-            stats = process_model(args.model, args.extraction_model)
+            stats = process_model(args.model, args.extraction_model, args.gpu_memory_utilization,
+                                args.tensor_parallel_size, args.max_model_len)
             
             print(f"\\n🎉 Extraction Completed!")
             print(f"   Processed: {stats['processed']}")

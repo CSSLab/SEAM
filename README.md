@@ -4,104 +4,73 @@
 
 Evaluating whether vision–language models (VLMs) reason consistently across representations is challenging because modality comparisons are typically confounded by task differences and asymmetric information. We introduce **SEAM**, a benchmark that pairs semantically equivalent inputs across four domains with existing standardized textual and visual notations. By employing distinct notation systems across modalities, in contrast to OCR-based image-text pairing, SEAM provides a rigorous comparative assessment of the textual-symbolic and visual-spatial reasoning capabilities of VLMs. Across 16 contemporary models, we observe systematic modality imbalance: vision frequently lags language in overall performance, despite the problems containing semantically equivalent information, and cross-modal agreement is relatively low. Our error analysis reveals two main drivers: textual perception failures from tokenization in domain notations and visual perception failures that induce hallucinations. We also show that our results are largely robust to visual transformations. SEAM establishes a controlled, semantically equivalent setting for measuring and improving modality-agnostic reasoning.
 
-## Overview
-
-SEAM addresses fundamental limitations in existing benchmarks through its utilization of distinct notation systems and preservation of semantic equivalence across modalities. By leveraging domain-specific standardized representations in:
-
-- **Chess**: Board images vs. FEN strings
-- **Chemistry**: Structural diagrams vs. SMILES strings
-- **Music**: Staff images vs. ABC notations
-- **Graph Theory**: Node-edge diagrams vs. adjacency matrices
-
-SEAM presents both visual-spatial and textual-symbolic representations while maintaining semantic equivalence. The benchmark comprises 16 carefully calibrated tasks designed to be self-contained in both modalities with 3,200 four-way multiple-choice questions in total.
-
 ## Features
 
-- **vLLM Batch Inference**: Efficient offline batch processing using vLLM
-- **Multi-Modal Support**: Language-only, vision-only, and vision-language evaluation
-- **Automatic Answer Extraction**: Built-in LLM-based extraction with regex fallback
-- **Progress Tracking**: Real-time progress bars with ETA using tqdm
-- **Flexible Plotting**: Multiple plot types for comprehensive analysis
-- **Model-Specific Organization**: Results saved in `results/{model_name}/` directories
+- 3,200 base questions across 4 domains (Chess, Chemistry, Music, Graph Theory) = 9,600 total evaluations across 3 modalities
+- 3 modalities: Language-only, Vision-only, Vision-Language
+- Unified 3-stage pipeline: Inference → Extraction → Metrics
+- Support for vLLM, OpenAI, and Claude models
 
 ## Setup
 
-```bash
-# Install dependencies and setup API keys
-cd code/config && ./setup.sh
+1. **Install dependencies**:
+   ```bash
+   cd code/config
+   pip install -r requirements.txt
+   ```
 
-# Or manually:
-cd code/config
-pip install -r requirements.txt
-cp api_keys.json.template api_keys.json
-# Edit api_keys.json and add your API keys
-```
-
-### API Configuration
-
-The project uses a secure JSON-based API key management system:
-
-1. **Copy the template**: `cp api_keys.json.template api_keys.json`
-2. **Edit api_keys.json**: Add your API keys:
+2. **Configure API keys**:
+   ```bash
+   cp api_keys.json.template api_keys.json
+   ```
+   Edit `api_keys.json` with your API keys:
    ```json
    {
      "openai": {
        "api_key": "sk-your-openai-key-here"
      },
      "anthropic": {
-       "api_key": "your-anthropic-key-here"
+       "api_key": "your-anthropic-key-here"  
      },
      "huggingface": {
        "api_key": "your-huggingface-token-here"
      }
    }
    ```
-3. **Security**: The `api_keys.json` file is automatically excluded from git via `.gitignore`
-
-**Alternative**: You can still use environment variables if preferred:
-```bash
-export OPENAI_API_KEY=your_openai_key           # For OpenAI batch
-export ANTHROPIC_API_KEY=your_anthropic_key     # For Claude batch
-export HF_TOKEN=your_huggingface_token          # For gated HuggingFace models
-```
 
 ## Quick Start
 
-### Unified 3-Stage Pipeline
+Run a complete evaluation in 4 steps:
 
-The SEAM benchmark now uses a unified 3-stage pipeline for all model types:
-
-#### Stage 1: Inference
+**1. Dataset** - Automatically downloaded on first run:
 ```bash
-# vLLM (Local Models)
+# No manual setup required - dataset downloads automatically when needed
+
+# Or manually download using HuggingFace datasets:
+python -c "
+from datasets import load_dataset
+dataset = load_dataset('lilvjosephtang/SEAM-Benchmark')
+print('Dataset downloaded successfully')
+print(f'Available tasks: {list(dataset.keys())}')
+"
+```
+
+**2. Inference** - Generate model responses:
+```bash
+# Choose your model provider:
 cd code/run && python 01_inference_vllm.py --model Qwen/Qwen2.5-VL-7B-Instruct --modes l,v,vl
-
-# OpenAI (Real-time)
-cd code/run && python 01_inference_openai.py --model gpt-4o-mini --modes l,v,vl
-
-# OpenAI (Batch Processing)
-cd code/run && python 01_inference_openai.py --model gpt-4o-mini --batch --action all --modes l,v,vl
-
-# Claude (Real-time with parallel processing)
+cd code/run && python 01_inference_openai.py --model gpt-4o-mini --modes l,v,vl  
 cd code/run && python 01_inference_claude.py --model claude-3-5-sonnet-20241022 --modes l,v,vl
 ```
 
-#### Stage 2: Answer Extraction
+**3. Extract answers** - Parse model outputs:
 ```bash
-# Extract for specific model
 cd code/run && python 02_extract.py --model qwen-qwen2.5-vl-7b-instruct
-
-# Extract for all models
-cd code/run && python 02_extract.py --all
 ```
 
-#### Stage 3: Metrics & Analysis
+**4. Compute metrics** - Analyze results:
 ```bash
-# Compute metrics for specific model
 cd code/run && python 03_metric.py --model qwen-qwen2.5-vl-7b-instruct
-
-# Generate comparison plots
-cd code/run && python 03_metric.py --compare --models qwen-qwen2.5-vl-7b-instruct,gpt-4o-mini
 ```
 
 ### Multi-Provider Model Support
@@ -140,12 +109,9 @@ CLAUDE_MODELS=(
 
 #### Advanced vLLM Options
 ```bash
-# Custom GPU settings and specific tasks
+# Specific tasks only
 cd code/run && python 01_inference_vllm.py --model Qwen/Qwen2.5-VL-7B-Instruct \
-                                           --tasks fork,legal,puzzle \
-                                           --gpu-memory-utilization 0.6 \
-                                           --max-model-len 8192 \
-                                           --tensor-parallel-size 1
+                                           --tasks fork,legal,puzzle
 
 # Debug mode with limited samples
 cd code/run && python 01_inference_vllm.py --model Qwen/Qwen2.5-VL-7B-Instruct \
@@ -197,72 +163,6 @@ cd code/run && python 02_extract.py --list
 cd code/run && python 03_metric.py --list
 ```
 
-## Dataset Preparation
-
-### Option 1: Download from HuggingFace (Recommended)
-
-The SEAM benchmark dataset is available on HuggingFace at [lilvjosephtang/SEAM-Benchmark](https://huggingface.co/datasets/lilvjosephtang/SEAM-Benchmark) and can be used automatically:
-
-```bash
-# The dataset will be automatically downloaded when running the evaluation pipeline
-# No manual setup required - just run inference scripts directly
-
-# For manual download using HuggingFace datasets:
-python -c "
-from datasets import load_dataset
-dataset = load_dataset('lilvjosephtang/SEAM-Benchmark')
-print('Dataset downloaded successfully')
-print(f'Available tasks: {list(dataset.keys())}')
-"
-```
-
-The HuggingFace dataset provides:
-- **16 task-based splits** (fork, legal, puzzle, eval, carbon, hydrogen, weight, caption, notes, measures, forms, rhythm, path_counting, path_existence, shortest_path, bfs_traversal)
-- **3,200 base samples** (200 samples per task)
-- **Integrated images** stored as PIL Images for efficient loading
-- **Rich metadata** including task domains, question types, and notation systems
-- **Search functionality** through HuggingFace's interface
-
-### Option 2: Download from Google Drive
-
-You can download the pre-generated dataset from [this link](https://drive.google.com/drive/folders/12vruRWA56Sl4joIDH7uXF8QRmUcUoKwn?usp=sharing) and extract it to the `data/` directory.
-
-### Option 3: Generate Dataset Manually
-
-To generate the SEAM benchmark dataset manually, run the following scripts from the `code/dataset/` directory:
-
-```bash
-cd code/dataset/
-
-# Generate Chemistry tasks
-python dataset_chem.py
-
-# Generate Chess tasks
-python dataset_chess.py
-
-# Generate Graph Theory tasks
-python dataset_graph.py
-
-# Generate Music tasks
-python dataset_music.py
-```
-
-Each script will generate task-specific data, images, and question files in the `data/` directory.
-
-### Generate Plots
-
-```bash
-# Basic plots (domains and heatmap)
-./plot.sh
-
-# Advanced comparison plots
-python3 plot_comparison.py --plot-type all
-
-# Specific plot types
-python3 generate_plots.py --plot-type domains
-python3 plot_comparison.py --plot-type task-heatmap --models InternVL3-8B InternVL3-14B
-```
-
 ## Directory Structure
 
 ```
@@ -308,58 +208,7 @@ seam-benchmark/
 └── logs/                    # Application logs
 ```
 
-## Evaluation Details
-
-### Tasks and Domains
-
-The SEAM benchmark includes 16 tasks across 4 domains:
-
-- **Chess**: fork, legal, puzzle, eval
-- **Chemistry**: carbon, hydrogen, weight, caption
-- **Music**: notes, measures, forms, rhythm
-- **Graph**: path_counting, path_existence, shortest_path, bfs_traversal
-
-### Modalities
-
-Each task is evaluated in 3 modalities:
-- **L (Language-only)**: Text-only input using standardized notations
-- **V (Vision-only)**: Image-only input with visual representations
-- **VL (Vision-Language)**: Combined text and image input
-
-### Unified Output Schema
-
-All inference scripts output results in a consistent JSON format:
-```json
-{
-  "model": "qwen-qwen2.5-vl-7b-instruct",
-  "task_name": "fork", "mode": "l", "index": 0,
-  "question": "formatted_prompt", "answer": "C", "notation": "fen_string",
-  "output": "model_response", "final_answer": "C", "correct": true,
-  "latency": 2.1, "provider": "openai", "timestamp": "2025-08-12T21:30:00Z",
-  "extraction_method": "llm", "extraction_confidence": 0.95
-}
-```
-
-**Note**: The `latency` field represents actual per-sample processing time for OpenAI and Claude (real-time APIs), but is set to 0 for vLLM (batch inference) where individual sample timing is not meaningful.
-
-### Answer Extraction
-
-The unified extraction pipeline uses a two-stage process:
-1. **LLM Extraction**: Primary method using Qwen2.5-7B-Instruct (temperature=0, max_tokens=5)
-2. **Regex Fallback**: Pattern matching for common answer formats when LLM fails
-3. **Confidence Scoring**: Tracks extraction method and confidence level
-
 ## Configuration
-
-### Unified Configuration
-
-All pipeline scripts use centralized configuration from `code/config/config.py`:
-- **GPU Settings**: Memory utilization (default: 80%), tensor parallelism (default: 2 GPUs)
-- **Model Parameters**: Temperature (0.7 inference, 0.0 extraction), max tokens (8192 inference, 5 extraction)
-- **API Keys**: JSON-based configuration with environment variable fallback
-- **Data Sources**: HuggingFace dataset (default) with JSONL fallback
-- **Paths**: Benchmark data, results directory, model defaults
-- **Tasks & Modes**: Complete task and modality definitions
 
 ### Data Source Configuration
 
@@ -417,8 +266,6 @@ export HF_HOME=/path/to/cache       # HuggingFace model cache directory
 --model MODEL              # Model name (e.g., Qwen/Qwen2.5-VL-7B-Instruct)
 --modes l,v,vl            # Comma-separated modes (default: l)
 --tasks task1,task2       # Comma-separated task names (default: all)
---gpu-memory-utilization  # GPU memory utilization (default: 0.8)
---tensor-parallel-size   # Number of GPUs for tensor parallelism (default: 2)
 --debug-samples N        # Limit samples for debugging
 --no-resume             # Disable resume functionality
 
@@ -448,76 +295,22 @@ export HF_HOME=/path/to/cache       # HuggingFace model cache directory
 --models MODEL1,MODEL2  # Models to compare
 ```
 
-## Handling GPU Memory and Performance
+### GPU and Performance Configuration
 
-### Memory Management
+vLLM automatically manages GPU memory, but you can optimize for your setup via `code/config/config.py`:
 
-vLLM automatically manages GPU memory, but you can optimize for your setup:
+- **GPU_MEMORY_UTILIZATION** (default: 0.9) - How much VRAM to use
+- **MAX_MODEL_LENGTH** (default: 16384) - Maximum sequence length  
+- **TENSOR_PARALLEL_SIZE** (default: 2) - Number of GPUs for tensor parallelism
 
-1. **GPU Memory Utilization**: Control how much VRAM to use
-   ```bash
-   # Use 70% of GPU memory instead of default 80%
-   cd code/run && python run_vllm.py --model model_name --gpu-memory-utilization 0.7
-   ```
-
-2. **Model Length**: Reduce for memory-constrained setups
-   ```bash
-   # Reduce max sequence length to 8192 tokens
-   cd code/run && python run_vllm.py --model model_name --max-model-len 8192
-   ```
-
-### Multi-GPU Support
-
-For models that require multiple GPUs:
+For multi-GPU setups:
 ```bash
-# Set tensor parallelism in code/config/config.py
-DEFAULT_TENSOR_PARALLEL_SIZE = 2  # Use 2 GPUs
+# Configure in code/config/config.py
+TENSOR_PARALLEL_SIZE = 2  # Use 2 GPUs
 
 # Or specify visible devices
 export CUDA_VISIBLE_DEVICES=0,1
-cd code/run && python run_vllm.py --model large_model
-```
-
-### Performance Monitoring
-
-```bash
-# Monitor GPU usage during inference
-watch -n1 nvidia-smi
-
-# Check model loading progress
-tail -f vllm_output.log
-```
-
-## Performance Optimization
-
-- **Batch Processing**: vLLM automatically batches prompts for optimal throughput
-- **GPU Utilization**: Configurable memory usage to maximize efficiency
-- **Progress Tracking**: Real-time progress bars with throughput metrics
-- **Automatic Caching**: Model weights cached for subsequent runs
-
-## Troubleshooting
-
-### Common Issues
-
-1. **GPU Memory Errors**: Reduce `--gpu-memory-utilization` or `--max-model-len`
-2. **Model Loading Issues**: Check HuggingFace cache space and network connectivity
-3. **Import Errors**: Ensure vLLM and transformers are properly installed
-4. **Missing Images**: Ensure chess-bench dataset is properly downloaded
-5. **InternVL Chat Template Issues**: The pipeline automatically handles InternVL's string-based format vs. other models' list-based format
-6. **Noisy vLLM Warnings**: Tokenizer warnings are automatically suppressed for cleaner logs
-7. **Gated Model Authentication**: For models like Llama that require HuggingFace tokens, add your token to `api_keys.json` or set `HF_TOKEN` environment variable
-
-### Debug Mode
-
-```bash
-# Test with limited samples
-cd code/run && python run_vllm.py --model model_name --debug-samples 5 --no-auto-extract
-
-# Test single task and mode
-cd code/run && python run_vllm.py --model model_name --tasks fork --modes l --debug-samples 2
-
-# Manual answer extraction for debugging
-cd code/run && python extract_answers.py --results-file ../../results/debug/results.jsonl
+cd code/run && python 01_inference_vllm.py --model large_model
 ```
 
 ## Citation
