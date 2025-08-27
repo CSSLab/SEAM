@@ -2,7 +2,7 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-2508.18179-b31b1b.svg)](https://arxiv.org/abs/2508.18179)
 [![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-yellow)](https://huggingface.co/datasets/lilvjosephtang/SEAM-Benchmark)
-[![Website](https://img.shields.io/badge/Leaderboard-github.io-green)](https://github.com/lilv98/SEAM-Website)
+[![Website](https://img.shields.io/badge/Leaderboard-github.io-green)](https://lilv98.github.io/SEAM-Website/)
 [![OpenReview](https://img.shields.io/badge/OpenReview-Discussion-purple)](https://openreview.net/forum?id=lI4LgGv4sX)
 
 ## Abstract
