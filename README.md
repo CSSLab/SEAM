@@ -1,5 +1,10 @@
 # SEAM: Semantically Equivalent Across Modalities Benchmark for Vision-Language Models
 
+[![arXiv](https://img.shields.io/badge/arXiv-2508.18179-b31b1b.svg)](https://arxiv.org/abs/2508.18179)
+[![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-yellow)](https://huggingface.co/datasets/lilvjosephtang/SEAM)
+[![Code](https://img.shields.io/badge/Code-GitHub-green)](https://github.com/CSSLab/SEAM)
+[![OpenReview](https://img.shields.io/badge/OpenReview-Discussion-purple)](https://openreview.net/forum?id=lI4LgGv4sX)
+
 ## Abstract
 
 Evaluating whether vision–language models (VLMs) reason consistently across representations is challenging because modality comparisons are typically confounded by task differences and asymmetric information. We introduce **SEAM**, a benchmark that pairs semantically equivalent inputs across four domains with existing standardized textual and visual notations. By employing distinct notation systems across modalities, in contrast to OCR-based image-text pairing, SEAM provides a rigorous comparative assessment of the textual-symbolic and visual-spatial reasoning capabilities of VLMs. Across 16 contemporary models, we observe systematic modality imbalance: vision frequently lags language in overall performance, despite the problems containing semantically equivalent information, and cross-modal agreement is relatively low. Our error analysis reveals two main drivers: textual perception failures from tokenization in domain notations and visual perception failures that induce hallucinations. We also show that our results are largely robust to visual transformations. SEAM establishes a controlled, semantically equivalent setting for measuring and improving modality-agnostic reasoning.
